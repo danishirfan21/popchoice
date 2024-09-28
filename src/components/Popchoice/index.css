@@ -1,5 +1,6 @@
 * {
   box-sizing: border-box;
+  background: #000c36;
 }
 
 .container {
@@ -7,7 +8,6 @@
   flex-direction: column;
   align-items: center;
   padding: 20px;
-  background: #000c36;
   height: 100vh;
 }
 
@@ -72,4 +72,39 @@
   opacity: 0px;
   background: #51e08a;
   color: #000c36;
+}
+
+.movie-card {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  color: #f0f0f0;
+}
+
+.movie-card h2 {
+  margin: 0 0 10px;
+  font-family: 'Carter One', system-ui;
+  color: #f0f0f0;
+}
+
+.movie-card p {
+  margin: 0;
+  color: #f0f0f0;
+}
+
+.movie-image {
+  width: 20%;
+  height: auto;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.recommendations {
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
 }
