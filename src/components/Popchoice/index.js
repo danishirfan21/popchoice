@@ -17,52 +17,93 @@ export default function Popchoice() {
     setMovieRecommendations([]);
   };
 
+  async function createEmbedding(input) {
+    try {
+      const embeddingResponse = await openai.embeddings.create({
+        model: 'text-embedding-ada-002',
+        input,
+      });
+      return embeddingResponse.data[0].embedding;
+    } catch (error) {
+      console.error('Error creating embedding:', error);
+    }
+  }
+
+  async function findNearestMatch(embedding) {
+    try {
+      const { data, error } = await supabase.rpc('match_movies', {
+        query_embedding: embedding,
+        match_threshold: 0.5,
+        match_count: 4,
+      });
+
+      if (data.length === 0) {
+        return [];
+      }
+
+      if (error) {
+        console.error('Error finding nearest match:', error);
+        return;
+      }
+
+      const match = data.map((obj) => obj.content).join('\n');
+      return match;
+    } catch (error) {
+      console.error('Error finding nearest match:', error);
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
-    console.log('Favorite Movie:', favoriteMovie);
-    console.log('Mood:', mood);
-    console.log('Fun or Serious:', funOrSerious);
+    
+    const userInput = `Favorite Movie:  ${favoriteMovie}\nMood: ${mood}\nFun or Serious: ${funOrSerious}`;
 
     const chatMessages = [
       {
         role: 'system',
         content:
-          "You are a movie expert suggesting movies based on user preferences. Provide all movie recommendations as a JSON array of objects, where each object contains the following keys: 'movieName' (string) for the name of the movie, 'description' (string) for a short description of the movie, and 'coverImageUrl' (string) for the URL of the movie's cover image. Use camelCase for the keys and ensure that the cover image URLs are sourced from a reliable database like The Movie Database (TMDb) or IMDb. Do not include any introductory text or additional commentary.",
-      },
-      {
-        role: 'assistant',
-        content: 'What’s your favorite movie and why?',
+          "You are a movie expert suggesting movies based on user preferences. Provide all movie recommendations strictly as a JSON array of objects, without any text outside the array. Each object must contain the following keys: 'movieName' (string), 'description' (string), and 'coverImageUrl' (string). Use camelCase for the keys and ensure that the cover image URLs are sourced from a reliable database like The Movie Database (TMDb) or IMDb. Do not make up image URLs if they cannot be found. Exclude any movie for which a valid cover image cannot be found.",
       },
       {
         role: 'user',
-        content: favoriteMovie,
-      },
-      {
-        role: 'assistant',
-        content: 'Are you in the mood for something new or a classic?',
-      },
-      {
-        role: 'user',
-        content: mood,
-      },
-      {
-        role: 'assistant',
-        content: 'Do you wanna have fun or do you want something serious?',
-      },
-      {
-        role: 'user',
-        content: funOrSerious,
+        content: userInput,
       },
     ];
 
+    const embedding = await createEmbedding(userInput);
+    const match = await findNearestMatch(embedding);
+    if (!match) {
+      console.error('No matching movies found.');
+      return;
+    }
+
+    if (!match || match.length === 0) {
+      setMovieRecommendations([]);
+      setIsSubmitted(true);
+      return;
+    }
+
     const response = await openai.chat.completions.create({
       model: 'gpt-4',
-      messages: chatMessages,
+      messages: [
+        ...chatMessages,
+        {
+          role: 'user',
+          content: `Here are some movies related to: ${match}`,
+        },
+      ],
       temperature: 0.5,
       frequency_penalty: 0.5,
     });
 
-    const suggestions = JSON.parse(response.choices[0].message.content);
+    let suggestions;
+    try {
+      suggestions = JSON.parse(response.choices[0].message.content);
+    } catch (err) {
+      console.error('Failed to parse response as JSON:', err);
+      suggestions = [];
+    }
+
     setMovieRecommendations(suggestions);
 
     setIsSubmitted(true);
@@ -79,18 +120,25 @@ export default function Popchoice() {
         <h1 className="title">PopChoice</h1>
       </div>
       {isSubmitted ? (
-        <div className='recommendations'>
-          {movieRecommendations?.map((movie) => (
-            <div key={movie?.movieName} className="movie-card">
-              <img
-                className="movie-image"
-                src={movie?.coverImageUrl}
-                alt={movie?.movieName}
-              />
-              <h2>{movie?.movieName}</h2>
-              <p>{movie?.description}</p>
-            </div>
-          ))}
+        <div className="recommendations">
+          {movieRecommendations?.length > 0 ? (
+            movieRecommendations?.map((movie) => (
+              <div key={movie?.movieName} className="movie-card">
+                <img
+                  className="movie-image"
+                  src={movie?.coverImageUrl}
+                  alt={movie?.movieName}
+                />
+                <h2>{movie?.movieName}</h2>
+                <p>{movie?.description}</p>
+              </div>
+            ))
+          ) : (
+            <p>No movie recommendations found.</p>
+          )}
+          <button className="reset-button" onClick={resetForm}>
+            Try Again
+          </button>
         </div>
       ) : (
         <form className="movie-form">
@@ -133,7 +181,7 @@ export default function Popchoice() {
               required
             />
           </div>
-          <button className="submit-btn" onClick={handleSubmit}>
+          <button className="submit-button" onClick={handleSubmit}>
             Let’s Go
           </button>
         </form>
