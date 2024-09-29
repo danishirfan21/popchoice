@@ -62,7 +62,7 @@ export default function Popchoice() {
       {
         role: 'system',
         content:
-          "You are a movie expert suggesting movies based on user preferences. Provide all movie recommendations strictly as a JSON array of objects, without any text outside the array. Each object must contain the following keys: 'movieName' (string), 'description' (string), and 'coverImageUrl' (string). Use camelCase for the keys and ensure that the cover image URLs are sourced from a reliable database like The Movie Database (TMDb) or IMDb. Do not make up image URLs if they cannot be found. Exclude any movie for which a valid cover image cannot be found.",
+          "You are a movie expert suggesting movies based on user preferences. Provide all movie recommendations strictly as a JSON array of objects, without any text outside the array. Each object must contain the following keys: 'movieName' (string), 'description' (string), and 'coverImageUrl' (string). Use camelCase for the keys and ensure that the cover image URLs are sourced from a reliable database like The Movie Database (TMDb) or IMDb.",
       },
       {
         role: 'user',
